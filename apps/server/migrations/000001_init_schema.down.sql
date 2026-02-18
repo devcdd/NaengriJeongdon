@@ -1,0 +1,10 @@
+drop table if exists user_food_search_history;
+drop table if exists pantry_items;
+drop table if exists shelf_life_rules;
+drop table if exists food_recommended_storage_types;
+drop table if exists food_aliases;
+drop table if exists foods;
+drop table if exists food_categories;
+drop table if exists storage_spaces;
+drop table if exists storage_types;
+drop table if exists app_users;

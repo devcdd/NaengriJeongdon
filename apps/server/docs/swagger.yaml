@@ -1,0 +1,1184 @@
+basePath: /api/v1
+definitions:
+  catalog.CodeName:
+    properties:
+      code:
+        example: FRIDGE
+        type: string
+      name:
+        example: 냉장
+        type: string
+    type: object
+  catalog.FoodCategoryCode:
+    enum:
+    - DAIRY
+    - MEAT
+    - SEAFOOD
+    - VEGETABLE
+    - FRUIT
+    - KIMCHI_SIDE
+    - FROZEN_FOOD
+    - SAUCE
+    - DRINK
+    - ETC
+    type: string
+    x-enum-varnames:
+    - FoodCategoryDairy
+    - FoodCategoryMeat
+    - FoodCategorySeafood
+    - FoodCategoryVegetable
+    - FoodCategoryFruit
+    - FoodCategoryKimchiSide
+    - FoodCategoryFrozenFood
+    - FoodCategorySauce
+    - FoodCategoryDrink
+    - FoodCategoryEtc
+  catalog.StorageTypeCode:
+    enum:
+    - FRIDGE
+    - FREEZER
+    - KIMCHI
+    - ROOM
+    type: string
+    x-enum-varnames:
+    - StorageTypeFridge
+    - StorageTypeFreezer
+    - StorageTypeKimchi
+    - StorageTypeRoom
+  handlers.CreatePantryItemRequest:
+    properties:
+      expiresAt:
+        example: "2026-02-21"
+        type: string
+      foodCategoryCode:
+        allOf:
+        - $ref: '#/definitions/catalog.FoodCategoryCode'
+        description: '식품 카테고리 코드: DAIRY, MEAT, SEAFOOD, VEGETABLE, FRUIT, KIMCHI_SIDE,
+          FROZEN_FOOD, SAUCE, DRINK, ETC'
+        enum:
+        - DAIRY
+        - MEAT
+        - SEAFOOD
+        - VEGETABLE
+        - FRUIT
+        - KIMCHI_SIDE
+        - FROZEN_FOOD
+        - SAUCE
+        - DRINK
+        - ETC
+        example: DAIRY
+      foodId:
+        example: 00000000-0000-0000-0000-000000000002
+        type: string
+      inputName:
+        example: 우유
+        type: string
+      purchasedAt:
+        example: "2026-02-14"
+        type: string
+      storageSpaceId:
+        example: 00000000-0000-0000-0000-000000000005
+        type: string
+    type: object
+  handlers.CreateStorageSpaceRequest:
+    properties:
+      name:
+        example: 우리집 메인 냉장고
+        type: string
+      storageTypeCode:
+        allOf:
+        - $ref: '#/definitions/catalog.StorageTypeCode'
+        description: '보관 공간 타입 코드: FRIDGE(냉장), FREEZER(냉동), KIMCHI(김치냉장), ROOM(실온)'
+        enum:
+        - FRIDGE
+        - FREEZER
+        - KIMCHI
+        - ROOM
+        example: FRIDGE
+    type: object
+  handlers.ErrorResponse:
+    properties:
+      message:
+        example: not implemented
+        type: string
+    type: object
+  handlers.LogoutRequest:
+    properties:
+      refreshToken:
+        example: sample-refresh-token
+        type: string
+    type: object
+  handlers.RefreshTokenRequest:
+    properties:
+      refreshToken:
+        example: sample-refresh-token
+        type: string
+    type: object
+  handlers.RegisterRequest:
+    properties:
+      displayName:
+        example: 냉장고고수
+        type: string
+      signupToken:
+        example: sample-signup-token
+        type: string
+    type: object
+  handlers.UpdateMeRequest:
+    properties:
+      displayName:
+        example: 냉리정돈고수
+        type: string
+    type: object
+  handlers.UpdatePantryItemRequest:
+    properties:
+      expiresAt:
+        example: "2026-02-22"
+        type: string
+      inputName:
+        example: 딸기 우유
+        type: string
+      notes:
+        example: 아침 시리얼용
+        type: string
+      purchasedAt:
+        example: "2026-02-15"
+        type: string
+      storageSpaceId:
+        example: 00000000-0000-0000-0000-000000000005
+        type: string
+    type: object
+  handlers.UpdateStorageSpaceRequest:
+    properties:
+      isArchived:
+        default: false
+        type: boolean
+      name:
+        example: 작은 냉동실
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API for naengrijeongdon inventory management.
+  title: NaengriJeongdon API
+  version: 0.1.0
+paths:
+  /auth/kakao/callback:
+    get:
+      description: 카카오 code를 받아 로그인 또는 회원가입 필요 상태를 반환합니다.
+      parameters:
+      - description: 인가 코드
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 카카오 OAuth 콜백 처리
+      tags:
+      - Auth
+  /auth/kakao/login-url:
+    get:
+      description: 프론트에서 카카오 인증 화면으로 이동할 URL을 조회합니다.
+      parameters:
+      - default: http://localhost:8080/api/v1/auth/kakao/callback
+        description: 로그인 완료 후 리다이렉트 URI
+        in: query
+        name: redirectUri
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 카카오 OAuth 로그인 URL 조회
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 로그아웃 요청
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/handlers.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      - RefreshTokenAuth: []
+      summary: 로그아웃
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 리프레시 토큰 요청
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      - RefreshTokenAuth: []
+      summary: 액세스 토큰 재발급
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: signupToken 기반으로 회원가입 후 로그인 토큰을 발급합니다.
+      parameters:
+      - description: 회원가입 요청
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 회원가입
+      tags:
+      - Auth
+  /auth/session:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 현재 인증 세션 조회
+      tags:
+      - Auth
+  /foods/{foodId}:
+    get:
+      parameters:
+      - description: 식품 ID
+        in: path
+        name: foodId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 식품 상세 조회
+      tags:
+      - Foods
+  /foods/{foodId}/predict-expiry:
+    get:
+      parameters:
+      - description: 식품 ID
+        in: path
+        name: foodId
+        required: true
+        type: string
+      - description: 보관 공간 ID
+        example: 00000000-0000-0000-0000-000000000005
+        in: query
+        name: storageSpaceId
+        required: true
+        type: string
+      - description: 구매일(YYYY-MM-DD)
+        example: "2026-02-18"
+        in: query
+        name: purchasedAt
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 유통기한 예측 미리보기
+      tags:
+      - Foods
+  /foods/autocomplete:
+    get:
+      parameters:
+      - description: 검색어
+        example: 우유
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 10
+        description: 최대 개수
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 식품 자동완성 조회
+      tags:
+      - Foods
+  /health/live:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - AccessTokenAuth: []
+      summary: Liveness check
+      tags:
+      - Health
+  /health/ready:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - AccessTokenAuth: []
+      summary: Readiness check
+      tags:
+      - Health
+  /metadata/food-categories:
+    get:
+      description: '코드 설명: DAIRY(유제품), MEAT(육류), SEAFOOD(해산물), VEGETABLE(채소), FRUIT(과일),
+        KIMCHI_SIDE(김치/반찬), FROZEN_FOOD(냉동식품), SAUCE(소스/조미료), DRINK(음료), ETC(기타)'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/catalog.CodeName'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 식품 카테고리 목록 조회
+      tags:
+      - Metadata
+  /metadata/storage-types:
+    get:
+      description: '코드 설명: FRIDGE(냉장), FREEZER(냉동), KIMCHI(김치냉장), ROOM(실온)'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/catalog.CodeName'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 보관 타입 목록 조회
+      tags:
+      - Metadata
+  /pantry-items:
+    get:
+      description: 'status 코드: ALL(전체), EXPIRED(만료), TODAY(오늘 마감), DUE_3_DAYS(3일 이내),
+        DUE_7_DAYS(7일 이내), SAFE(여유 있음), NO_EXPIRY(마감일 없음). sort 코드: EXPIRES_ASC(마감일
+        빠른순), CREATED_DESC(등록 최신순).'
+      parameters:
+      - default: ALL
+        description: 상태 필터
+        enum:
+        - ALL
+        - EXPIRED
+        - TODAY
+        - DUE_3_DAYS
+        - DUE_7_DAYS
+        - SAFE
+        - NO_EXPIRY
+        in: query
+        name: status
+        type: string
+      - description: 공간 ID
+        example: 00000000-0000-0000-0000-000000000005
+        in: query
+        name: storageSpaceId
+        type: string
+      - description: 검색어
+        example: 우유
+        in: query
+        name: q
+        type: string
+      - default: EXPIRES_ASC
+        description: 정렬
+        enum:
+        - EXPIRES_ASC
+        - CREATED_DESC
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 내 식재료 목록 조회
+      tags:
+      - PantryItems
+    post:
+      consumes:
+      - application/json
+      description: 'foodCategoryCode 코드: DAIRY(유제품), MEAT(육류), SEAFOOD(해산물), VEGETABLE(채소),
+        FRUIT(과일), KIMCHI_SIDE(김치/반찬), FROZEN_FOOD(냉동식품), SAUCE(소스/조미료), DRINK(음료),
+        ETC(기타). 실시간 목록은 GET /api/v1/metadata/food-categories 참고.'
+      parameters:
+      - description: 등록 요청
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreatePantryItemRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 식재료 등록
+      tags:
+      - PantryItems
+  /pantry-items/{itemId}:
+    delete:
+      parameters:
+      - description: 식재료 ID
+        in: path
+        name: itemId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 식재료 삭제
+      tags:
+      - PantryItems
+    get:
+      parameters:
+      - description: 식재료 ID
+        in: path
+        name: itemId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 식재료 단건 조회
+      tags:
+      - PantryItems
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: 식재료 ID
+        in: path
+        name: itemId
+        required: true
+        type: string
+      - description: 수정 요청
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdatePantryItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 식재료 수정
+      tags:
+      - PantryItems
+  /pantry-items/{itemId}/ack-storage-warning:
+    post:
+      parameters:
+      - description: 식재료 ID
+        in: path
+        name: itemId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 보관 방식 경고 확인 처리
+      tags:
+      - PantryItems
+  /storage-spaces:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 보관 공간 목록 조회
+      tags:
+      - StorageSpaces
+    post:
+      consumes:
+      - application/json
+      description: 'storageTypeCode 코드: FRIDGE(냉장), FREEZER(냉동), KIMCHI(김치냉장), ROOM(실온).
+        실시간 목록은 GET /api/v1/metadata/storage-types 참고.'
+      parameters:
+      - description: 생성 요청
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateStorageSpaceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 보관 공간 생성
+      tags:
+      - StorageSpaces
+  /storage-spaces/{spaceId}:
+    delete:
+      parameters:
+      - description: 공간 ID
+        in: path
+        name: spaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 보관 공간 삭제
+      tags:
+      - StorageSpaces
+    get:
+      parameters:
+      - description: 공간 ID
+        in: path
+        name: spaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 보관 공간 단건 조회
+      tags:
+      - StorageSpaces
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: 공간 ID
+        in: path
+        name: spaceId
+        required: true
+        type: string
+      - description: 수정 요청
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateStorageSpaceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 보관 공간 수정
+      tags:
+      - StorageSpaces
+  /users/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 내 사용자 정보 조회
+      tags:
+      - Users
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: 수정 요청
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateMeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - AccessTokenAuth: []
+      summary: 내 사용자 정보 수정
+      tags:
+      - Users
+securityDefinitions:
+  AccessTokenAuth:
+    description: 'Bearer access token. Example: Bearer eyJ...'
+    in: header
+    name: Authorization
+    type: apiKey
+  RefreshTokenAuth:
+    description: 'Bearer refresh token. Example: Bearer eyJ...'
+    in: header
+    name: X-Refresh-Token
+    type: apiKey
+swagger: "2.0"
